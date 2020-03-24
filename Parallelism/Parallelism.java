@@ -1,67 +1,46 @@
 /* Author: Devansh Amin */
-import java.util.concurrent.*;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class Parallelism {
-    static long sum;
-    static class Adder implements Runnable{
-        int hi,lo;
-        int[] arr;
-        Adder(int[] arr, int lo, int hi){
-            this.arr = arr;
-            this.lo = lo;
-            this.hi = hi;
-        }
-        @Override
-        public void run() {
-            synchronized (this) {
-                //System.out.println("Thread Name: "+Thread.currentThread().getName());
-                //System.out.println("Low: "+lo);
-                //System.out.println("High: "+hi);
-                for (int i = lo; i < hi; i++) {
-                    sum += arr[i];
-                }
-            }
-        }
-    }
-    public static void main(String[] args) throws ExecutionException, InterruptedException {
-        ExecutorService executor;
-        Adder fst;
-        Future task;
-        Thread first;
-        long start,end;
-        Random rand = new Random();
-        int limit = 250_000_000,lo=0,hi=0,temp=0;
-        int[] a = new int[limit];
 
-        for(int i=0;i<limit;i++){
-            a[i] = rand.nextInt();
-        }
+    public static void main(String[] args) throws Exception{
+        // Make a random Array
+        Random random = new Random();
+        int[] xs = new int[250_000_000];
+        for (int i = 0; i < xs.length; i += 1) xs[i] = random.nextInt();
 
-        for(int i=1;i<=100;i++) {
-            if (limit % i == 0) {
-                temp = limit / i;
-                executor = Executors.newFixedThreadPool(i);
-                lo = 0;
-                hi = temp;
-                start = System.currentTimeMillis();
-                for (int j = 0; j < i; j++) {
-                    
-                    fst = new Adder(a, lo, hi);
-                    first = new Thread(fst);
-                    first.start();
-                    first.join();
-                    //task = executor.submit(new Adder(a, lo, hi));
-                    //task.get();
-                    lo = hi;
-                    hi += temp;
-                }
-                end = System.currentTimeMillis();
-                System.out.println("Using " + i + " threads");
-                System.out.println("The sum was " + sum);
-                System.out.println("The computation took " + (end - start) + " milliseconds\n");
-                sum = 0;
+        // Try different numbers of threads from 1 up to 100.
+        for (int i = 1; i <= 100; i+=1) {
+            if (xs.length%i != 0) continue;
+            System.out.println("Using " + i + " threads");
+            long st = System.currentTimeMillis();
+
+            AtomicLong sum = new AtomicLong(0);
+            // Make i different threads.  Each one adds up one section of the array.
+            // Start each one.
+            Thread[] threads = new Thread[i];
+            for (int t = 0; t < i; t += 1) {
+                int lo = t * (xs.length / i);
+                int up = lo + (xs.length / i);
+                Runnable task = () -> {
+                    long minisum = 0;
+                    for (int j = lo; j < up; j += 1) {
+                        minisum += xs[j];
+                    }
+                    sum.getAndAdd(minisum);
+                };
+                threads[t] = new Thread(task);
             }
+
+            for (Thread thread : threads) thread.start();
+            for (Thread thread : threads) thread.join();
+
+            long ed = System.currentTimeMillis();
+            System.out.println("The sum was " + sum.get());
+            System.out.println("The computation took "+(ed-st)+" milliseconds");
+            System.out.println();
         }
     }
 }
