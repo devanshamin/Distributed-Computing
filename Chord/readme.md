@@ -1,1 +1,1 @@
-Suppose that 7 peers with ids 1, 12, 123, 234, 345, 456, and 501 form a system using a Chord ring with m = 9. If node 234 initiates a query for key 10, what is the list of nodes traversed by that query? Show your work.
+#### Suppose that 7 peers with ids 1, 12, 123, 234, 345, 456, and 501 form a system using a Chord ring with m = 9. If node 234 initiates a query for key 10, what is the list of nodes traversed by that query? Show your work.
